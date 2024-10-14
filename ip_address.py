@@ -31,7 +31,7 @@ class IPv4Address:
         #integer_ip = self.integer_ip
         ip_list = []
         if self.cidr == 31: # there isn't really a subnet, but it should have two ip addresses
-            # TODO, this implementation isn't always correct.
+            # TODO, this implementation isn't always correct. Need to determine which one is which.
             ip_list.append(self.from_integer(self.integer_ip))
             ip_list.append(self.from_integer(self.integer_ip + 1))
         
