@@ -233,12 +233,3 @@ class IPv4Address:
             return True
         else:
             return False
-        
-    
-
-addr1 = IPv4Address('192.168.10.1', 24)
-print(addr1._address)
-print(addr1.subnet_size())
-print(addr1)
-ip_list = addr1.generate_subnet_list()
-print(ip_list)
