@@ -1,3 +1,5 @@
+import warnings
+
 class IPv4Address:
     _ADDRESS_INVALID_FORMAT = "IPv4 bad address format"
     _ADDRESS_CHARACTER_ERROR = "IPv4 address contains unusual characters."
@@ -20,6 +22,9 @@ class IPv4Address:
         
         if cidr < 0 or cidr > 32:
             raise ValueError(self._CIDR_OUT_OF_RANGE)
+        
+        if cidr == 31:
+            warnings.warn('Warning: CIDR is /31. This is typically used in networking equipment for point-to-point connections, and not typically used for edge devices.')
         
         return cidr
     
@@ -49,11 +54,12 @@ class IPv4Address:
         subnet_address_result = []
         broadcast_result = []
 
-        for i in range(4):
-            subnet_address_result.append(address_octets[i] & subnet_octets[i])
-            broadcast_result.append(address_octets[i] | wildcard_octets[i])
+        if self._cidr_check():
+            for i in range(4):
+                subnet_address_result.append(address_octets[i] & subnet_octets[i])
+                broadcast_result.append(address_octets[i] | wildcard_octets[i])
         
-        self._subnet_address = f'{subnet_address_result[0]}.{subnet_address_result[1]}.{subnet_address_result[2]}.{subnet_address_result[3]}'
+                self._subnet_address = f'{subnet_address_result[0]}.{subnet_address_result[1]}.{subnet_address_result[2]}.{subnet_address_result[3]}'
 
         # Step 3: Ensure the address is not the Subnet Address or a Broadcast Address
         if address_octets == subnet_address_result:
@@ -62,12 +68,17 @@ class IPv4Address:
         if address_octets == broadcast_result:
             raise ValueError(self._ADDRESS_IS_BROADCAST_ID)
         
+        self._integer_ip = (address_octets[0] << 24) + (address_octets[1] << 16) + (address_octets[2] << 8) + address_octets[3]
+
         return address
             
 
     @property
     def subnet_address(self):
-        return self._subnet_address
+        if self._cidr_check():
+            return self._subnet_address
+        else:
+            print(f'There is no subnet address for {self.address}/{self.cidr}')
     
     @property
     def address(self):
@@ -161,14 +172,16 @@ class IPv4Address:
         if not isinstance(other, IPv4Address):
             return NotImplemented
         return self.integer_ip != other.integer_ip
+    
+    def _cidr_check(self):
+        if self._cidr != 31 and self._cidr != 32:
+            return True
+        else:
+            return False
         
-addr1 = IPv4Address('192.168.10.1', 23)
+addr1 = IPv4Address('192.168.10.1', 31)
 print(addr1.address)
 print(addr1.cidr)
 print(addr1.subnet_mask)
 print(addr1.subnet_address)
 print(addr1.integer_ip)
-
-addr2 = IPv4Address('192.168.10.2', 23)
-
-print(addr1 < addr2)
