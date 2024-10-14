@@ -32,11 +32,11 @@ class IPv4Address:
         ip_list = []
         if self.cidr == 31: # there isn't really a subnet, but it should have two ip addresses
             # TODO, this implementation isn't always correct. Need to determine which one is which.
-            ip_list.append(self.from_integer(self.integer_ip))
-            ip_list.append(self.from_integer(self.integer_ip + 1))
+            ip_list.append(self.from_integer(self.integer_ip, 31))
+            ip_list.append(self.from_integer(self.integer_ip + 1, 31))
         
         elif self.cidr == 32:
-            ip_list.append(self.integer_ip)
+            ip_list.append(self.from_integer(self.integer_ip, 32))
 
         else:
             integer_subnet_address = self._str_to_int_ip(self.subnet_address)
@@ -192,6 +192,12 @@ class IPv4Address:
     def integer_ip(self):
         return self._integer_ip
     
+    def _cidr_check(self):
+        if self._cidr != 31 and self._cidr != 32:
+            return True
+        else:
+            return False
+
     def __gt__(self, other):
         if not isinstance(other, IPv4Address):
             return NotImplemented
@@ -227,9 +233,3 @@ class IPv4Address:
     
     def __repr__(self):
         return self.address
-    
-    def _cidr_check(self):
-        if self._cidr != 31 and self._cidr != 32:
-            return True
-        else:
-            return False
