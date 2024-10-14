@@ -16,6 +16,54 @@ class IPv4Address:
         self._cidr = self._validate_cidr(cidr)
         self._address = self._validate_address(address) # validation of the address is reliant on the cidr notation
 
+    @classmethod
+    def from_integer(cls, ip_as_integer, cidr):
+        octet1 = (ip_as_integer >> 24) & 0xFF
+        octet2 = (ip_as_integer >> 16) & 0xFF
+        octet3 = (ip_as_integer >> 8) & 0xFF
+        octet4 = ip_as_integer & 0xFF
+        address = f'{octet1}.{octet2}.{octet3}.{octet4}'
+
+        ip_address = cls(address, cidr)
+        return ip_address
+
+    def generate_subnet_list(self):
+        #integer_ip = self.integer_ip
+        ip_list = []
+        if self.cidr == 31: # there isn't really a subnet, but it should have two ip addresses
+            # TODO, this implementation isn't always correct.
+            ip_list.append(self.from_integer(self.integer_ip))
+            ip_list.append(self.from_integer(self.integer_ip + 1))
+        
+        elif self.cidr == 32:
+            ip_list.append(self.integer_ip)
+
+        else:
+            integer_subnet_address = self._str_to_int_ip(self.subnet_address)
+
+            for ip in range(integer_subnet_address + 1, integer_subnet_address+self.subnet_size() + 1):
+                ip_list.append(self.from_integer(ip, self.cidr))
+
+        return ip_list
+
+    def subnet_size(self):
+        # 32 minus the cidr
+        if self.cidr == 31:
+            return 2
+        if self.cidr == 32:
+            return 1
+        return (2 ** (32-self.cidr))-2
+
+    def _str_to_int_ip(self, address):
+        octets = address.split('.')
+        octets = [int(octet) for octet in octets]
+
+        return self._octets_to_int_ip(octets)
+
+    def _octets_to_int_ip(self, octets):
+        integer_ip = (octets[0] << 24) + (octets[1] << 16) + (octets[2] << 8) + octets[3]
+        return integer_ip
+    
     def _validate_cidr(self, cidr):
         if not isinstance(cidr, int):
             raise TypeError(self._CIDR_NOT_INT)
@@ -59,7 +107,7 @@ class IPv4Address:
                 subnet_address_result.append(address_octets[i] & subnet_octets[i])
                 broadcast_result.append(address_octets[i] | wildcard_octets[i])
         
-                self._subnet_address = f'{subnet_address_result[0]}.{subnet_address_result[1]}.{subnet_address_result[2]}.{subnet_address_result[3]}'
+            self._subnet_address = f'{subnet_address_result[0]}.{subnet_address_result[1]}.{subnet_address_result[2]}.{subnet_address_result[3]}'
 
         # Step 3: Ensure the address is not the Subnet Address or a Broadcast Address
         if address_octets == subnet_address_result:
@@ -68,7 +116,8 @@ class IPv4Address:
         if address_octets == broadcast_result:
             raise ValueError(self._ADDRESS_IS_BROADCAST_ID)
         
-        self._integer_ip = (address_octets[0] << 24) + (address_octets[1] << 16) + (address_octets[2] << 8) + address_octets[3]
+        #self._integer_ip = (address_octets[0] << 24) + (address_octets[1] << 16) + (address_octets[2] << 8) + address_octets[3]
+        self._integer_ip = self._octets_to_int_ip(address_octets)
 
         return address
             
@@ -173,15 +222,23 @@ class IPv4Address:
             return NotImplemented
         return self.integer_ip != other.integer_ip
     
+    def __str__(self):
+        return self.address
+    
+    def __repr__(self):
+        return self.address
+    
     def _cidr_check(self):
         if self._cidr != 31 and self._cidr != 32:
             return True
         else:
             return False
         
-addr1 = IPv4Address('192.168.10.1', 31)
-print(addr1.address)
-print(addr1.cidr)
-print(addr1.subnet_mask)
-print(addr1.subnet_address)
-print(addr1.integer_ip)
+    
+
+addr1 = IPv4Address('192.168.10.1', 24)
+print(addr1._address)
+print(addr1.subnet_size())
+print(addr1)
+ip_list = addr1.generate_subnet_list()
+print(ip_list)
